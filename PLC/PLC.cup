@@ -9,16 +9,19 @@ terminal Integer ENTERO;
 terminal String CARACTER, IDENT;
 
 non terminal	Programa, Sentencia_comp, Lista_de_sent,Sent,Sentencia_simp,
-				List_declar_var,Declar_tipo,Expresion, Sent_if,Sent_while,
+				List_declar_var,Declar_tipo,Expresion,Sent_while,
 				Sent_do_while, Sent_switch,Sent_print,Tipo,
-				Else_if,Lista_switch, Opt_default,Bin_op,Variable,Rel_op;
+				pr_else,Lista_switch, Opt_default,Bin_op,Variable,Rel_op;
 non terminal DobleEtiq		Condicion,Sent_for;
+non terminal String  Sent_if;
 
 precedence right ASIG;
 precedence left LT,LQ,GT,GQ,EQUALS,NOTEQUALS, AND, OR, MAS, MENOS;
 precedence left POR, DIV, MOD;
 
 precedence left OPUNARIO;
+precedence nonassoc IF;
+precedence nonassoc ELSE;
 
 Programa::=			Lista_de_sent;
 Sentencia_comp::=	ALL Lista_de_sent CLL;
@@ -47,27 +50,25 @@ Sentencia_simp::=	PYC
 //					|CHAR
 //					|IDENT
 //					;
-Sent_if::=			IF{:
-						RESULT=Gen.nuevaEtiqueta();
-						System.out.println(RESULT);
-					:} AP Condicion:c CP
+Sent_if::=			IF AP Condicion:c CP
 					{:
 						Gen.gc(Gen.LABEL,null,null,c.v());
 					:}
 					Sent
 					{:
-						Gen.gc(Gen.GOTO,null,null,RESULT.toString());
+						RESULT=Gen.nuevaEtiqueta();
+						Gen.gc(Gen.GOTO,null,null,RESULT);
+						//goto c.f()
+						Gen.gc(Gen.LABEL, null, null, c.f());
 
 					:}
-					Else_if{:
-						//Gen.gc(Gen.LABEL,null,null,RESULT.toString());
-						Gen.gc(Gen.LABEL,null,null,c.f());
+					pr_else{:
+						Gen.gc(Gen.LABEL,null,null,RESULT);
 					:}
 					;
 
-Else_if::=			ELSE Sent %prec POR
-					| %prec POR
-					// |ELSEIF AP Condicion CP Sent Else_if %prec POR
+pr_else::=			ELSE Sent
+					|
 					;
 Sent_while::=		WHILE AP {:
 						RESULT=Gen.nuevaEtiqueta();
