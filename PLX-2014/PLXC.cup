@@ -1,0 +1,247 @@
+import java_cup.runtime.*;
+
+terminal		ALL,CLL,AP,CP,PYC,COMA,DP,signo_int,NOT,MAS,MENOS,POR,DIV;
+terminal		MOD,LT,LQ,GT,GQ,AND,OR,ASIG,EQUALS,NOTEQUALS,IF,ELSE, ELSEIF;
+terminal 		WHILE,DO,FOR,PRINT,TRUE,FALSE,SWITCH,CASE,BREAK;
+terminal		DEFAULT,INT,CHAR,TYPEDEF,INC, DECR;
+terminal 		OPUNARIO;
+terminal Integer ENTERO;
+terminal String CARACTER, IDENT;
+
+non terminal	Programa, Sentencia_comp, Lista_de_sent,Sent,Sentencia_simp,
+				List_declar_var,Declar_tipo,Expresion,Sent_while,
+				Sent_do_while, Sent_switch,Sent_print,Tipo,
+				pr_else,Lista_switch, Opt_default,Bin_op,Variable,Rel_op;
+non terminal DobleEtiq		Condicion,Sent_for;
+non terminal String  Sent_if;
+
+precedence right ASIG;
+precedence left LT,LQ,GT,GQ,EQUALS,NOTEQUALS, AND, OR, MAS, MENOS;
+precedence left POR, DIV, MOD;
+
+precedence left OPUNARIO;
+precedence nonassoc IF;
+precedence nonassoc ELSE;
+
+Programa::=			Lista_de_sent;
+Sentencia_comp::=	ALL Lista_de_sent CLL;
+Lista_de_sent::=	Sent
+					|Lista_de_sent Sent
+					;
+Sent::=				Sentencia_simp
+					|Sentencia_comp
+					;
+Sentencia_simp::=	PYC
+|List_declar_var PYC
+//					|Declar_tipo PYC
+					|Expresion PYC
+					|Sent_if
+					|Sent_while
+					|Sent_do_while
+					|Sent_for
+					|Sent_switch
+					|Sent_print PYC
+					;
+//List_declar_var::=	Tipo IDENT
+	//				|List_declar_var COMA IDENT
+	//				;
+//Declar_tipo::=	TYPEDEF Tipo IDENT;
+//Tipo::=			INT
+//					|CHAR
+//					|IDENT
+//					;
+Sent_if::=			IF AP Condicion:c CP
+					{:
+						Gen.gc(Gen.LABEL,null,null,c.v());
+					:}
+					Sent
+					{:
+						RESULT=Gen.nuevaEtiqueta();
+						Gen.gc(Gen.GOTO,null,null,RESULT);
+						//goto c.f()
+						Gen.gc(Gen.LABEL, null, null, c.f());
+
+					:}
+					pr_else{:
+						Gen.gc(Gen.LABEL,null,null,RESULT);
+					:}
+					;
+
+pr_else::=			ELSE Sent
+					|
+					;
+Sent_while::=		WHILE AP {:
+						RESULT=Gen.nuevaEtiqueta();
+						Gen.gc(Gen.LABEL,null,null,RESULT.toString());
+					:}Condicion:c CP {:
+						Gen.gc(Gen.LABEL,null,null,c.v());
+					:}Sent{:
+						Gen.gc(Gen.GOTO, null, null,RESULT.toString());
+						Gen.gc(Gen.LABEL,null,null,c.f());
+					:};
+Sent_do_while::=	DO {:
+						RESULT=Gen.nuevaEtiqueta();
+						Gen.gc(Gen.LABEL,null,null,RESULT.toString());
+					:}Sent WHILE AP Condicion:c CP PYC{:
+						Gen.gc(Gen.LABEL,null,null,c.v());
+						Gen.gc(Gen.GOTO,null,null,RESULT.toString());
+						Gen.gc(Gen.LABEL,null,null,c.f());
+					:}
+					;
+Sent_for::=			FOR AP Expresion:e1 {:
+						RESULT=new DobleEtiq(Gen.nuevaEtiqueta(),null);
+						Gen.gc(Gen.LABEL,null,null,RESULT.v());
+					:}PYC Condicion:c PYC{:
+						RESULT.f=Gen.nuevaEtiqueta();
+						Gen.gc(Gen.LABEL,null,null,RESULT.f());
+					:} Expresion:e2{:
+						Gen.gc(Gen.GOTO,null,null,RESULT.v());
+						Gen.gc(Gen.LABEL,null,null,c.v());
+					:} CP Sent{:
+						Gen.gc(Gen.GOTO,null,null,RESULT.f());
+						Gen.gc(Gen.LABEL,null,null,c.f());
+					:}
+					;
+Sent_switch::=		SWITCH {:
+						RESULT=Gen.nuevaEtiqueta();
+					:}AP Expresion:e CP ALL Lista_switch Opt_default CLL{:
+						Gen.gc(Gen.LABEL,null,null,RESULT.toString());
+					:};
+Lista_switch::=		CASE ENTERO{:
+						//Gen.gc(Gen.IFIGUAL)
+					:} DP Sent BREAK PYC
+					|Lista_switch CASE ENTERO DP Sent BREAK PYC
+					;
+Opt_default::=		DEFAULT DP Sent BREAK PYC
+					|
+					;
+Sent_print::=		PRINT AP Expresion:e1 CP {:
+						Gen.gc(Gen.PRINT,null,null,e1.toString());
+					:}
+					;
+/*Bin_op::=			MAS {:RESULT="MAS";:} %prec MAS
+					|MENOS{:RESULT="MENOS";:} %prec MENOS
+					|POR{:RESULT="POR";:}	%prec POR
+					|DIV{:RESULT="DIV";:}	%prec DIV
+					|MOD{:RESULT="MOD";:}	%prec MOD
+					;*/
+Expresion::=		Expresion:e1 MAS Expresion:e2{:
+						String et=Gen.nuevaTemp();
+						Gen.gc(Gen.SUMA,e1.toString(),e2.toString(),et);
+						RESULT=et;:}
+					|Expresion:e1 MENOS Expresion:e2{:
+						String et=Gen.nuevaTemp();
+						Gen.gc(Gen.RESTA,e1.toString(),e2.toString(),et);
+						RESULT=et;:}
+					|Expresion:e1 POR Expresion:e2{:
+						String et=Gen.nuevaTemp();
+						Gen.gc(Gen.MULT,e1.toString(),e2.toString(),et);
+						RESULT=et;:}
+					|Expresion:e1 DIV Expresion:e2{:
+						String et=Gen.nuevaTemp();
+						Gen.gc(Gen.DIV,e1.toString(),e2.toString(),et);
+						RESULT=et;:}
+					|Expresion:e1 MOD Expresion:e2{:
+						String et=Gen.nuevaTemp();
+						Gen.gc(Gen.MOD,e1.toString(),e2.toString(),et);
+
+						RESULT=et;:}
+					|MENOS Expresion:e{:
+						String et0=Gen.nuevaTemp();
+						Gen.gc(Gen.ASIG,"0",null,et0);
+						String et=Gen.nuevaTemp();
+						Gen.gc(Gen.RESTA,et0,e.toString(),et);
+						RESULT=et;
+					:}	%prec OPUNARIO
+					|AP Expresion:e CP {:
+						RESULT=e;
+					:}
+//					|Condicion signo_int Expresion DP Expresion
+					|Variable:v ASIG Expresion:e {:
+						Gen.gc(Gen.ASIG,e.toString(),null,v.toString());
+						RESULT=v;
+					:}
+					|ENTERO:n {:RESULT=n;:}
+//					|CARACTER
+					|Variable:v {:RESULT=v;:}
+					|INC Variable:v {:
+						Gen.gc(Gen.SUMA,v.toString(),"1",v.toString());
+						RESULT=v;
+					:}
+					|Variable:v INC{:
+						RESULT=v;
+						Gen.gc(Gen.SUMA,v.toString(),"1",v.toString());
+					:}
+					|DECR Variable:v{:
+						Gen.gc(Gen.RESTA,v.toString(),"1",v.toString());
+						RESULT=v;
+					:}
+					|Variable:v DECR{:
+						RESULT=v;
+						Gen.gc(Gen.RESTA,v.toString(),"1",v.toString());
+					:}
+					;
+Variable::=			IDENT:i {:RESULT=i;:};
+//Rel_op::=			LT | LQ | GQ | GT | EQUALS | NOTEQUALS
+//					;
+Condicion::=		//Expresion Rel_op Expresion {:
+					//RESULT=new DobleEtiq();
+					//:}
+					Expresion:e1 EQUALS Expresion:e2 {:
+						RESULT=new DobleEtiq();
+						Gen.gc(Gen.IFIGUAL,e1.toString(),e2.toString(),RESULT.v());
+						Gen.gc(Gen.GOTO,null,null,RESULT.f());
+					:}
+					|Expresion:e1 LT Expresion:e2 {:
+						RESULT=new DobleEtiq();
+						Gen.gc(Gen.IFMENOR,e1.toString(),e2.toString(),RESULT.v());
+						Gen.gc(Gen.GOTO,null,null,RESULT.f());
+					:}
+					|Expresion:e1 LQ Expresion:e2 {:
+						RESULT=new DobleEtiq();
+						Gen.gc(Gen.IFMENOR,e1.toString(),e2.toString(),RESULT.v());
+						Gen.gc(Gen.IFIGUAL,e1.toString(),e2.toString(),RESULT.v());
+						Gen.gc(Gen.GOTO,null,null,RESULT.f());
+					:}
+					|Expresion:e1 GQ Expresion:e2 {:
+						RESULT=new DobleEtiq();
+						Gen.gc(Gen.IFMENOR,e2.toString(),e1.toString(),RESULT.v());
+						Gen.gc(Gen.IFIGUAL,e2.toString(),e1.toString(),RESULT.v());
+						Gen.gc(Gen.GOTO,null,null,RESULT.f());
+					:}
+					|Expresion:e1 GT Expresion:e2 {:
+						RESULT=new DobleEtiq();
+						Gen.gc(Gen.IFMENOR,e2.toString(),e1.toString(),RESULT.v());
+						Gen.gc(Gen.GOTO,null,null,RESULT.f());
+					:}
+					|Expresion:e1 NOTEQUALS Expresion:e2 {:
+						RESULT=new DobleEtiq();
+						Gen.gc(Gen.IFIGUAL,e1.toString(),e2.toString(),RESULT.f());
+						Gen.gc(Gen.GOTO,null,null,RESULT.v());
+					:}
+
+
+					|Condicion:c1 AND {:
+						Gen.gc(Gen.LABEL,null,null,c1.v());
+					:}Condicion:c2{:
+						RESULT=c2;
+						Gen.gc(Gen.LABEL,null,null,c1.f());
+						Gen.gc(Gen.GOTO,null,null,c2.f());
+					:}
+					|Condicion:c1 OR {:
+						Gen.gc(Gen.LABEL,null,null,c1.f());
+					:}Condicion:c2 {:
+						RESULT=c2;
+						Gen.gc(Gen.LABEL,null,null,c1.v());
+						Gen.gc(Gen.GOTO,null,null,c2.v());
+					:}
+					|NOT Condicion:c {:
+						//cambiar condiciones
+						RESULT=new DobleEtiq(c.f(),c.v());
+					:}			%prec OPUNARIO
+					|AP Condicion:c CP{:
+						RESULT=c;
+					:}
+					|TRUE
+					|FALSE
+					;
