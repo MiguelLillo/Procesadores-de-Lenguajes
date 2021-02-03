@@ -1,5 +1,10 @@
 import java_cup.runtime.*;
-
+action code {:
+	class Decl{
+		String nombre;
+		String expresion;
+	}
+:};
 terminal		ALL,CLL,AP,CP,PYC,COMA,DP,signo_int,NOT,MAS,MENOS,POR,DIV;
 terminal		MOD,LT,LQ,GT,GQ,AND,OR,ASIG,EQUALS,NOTEQUALS,IF,ELSE, ELSEIF;
 terminal 		WHILE,DO,FOR,PRINT,TRUE,FALSE,SWITCH,CASE,BREAK;
@@ -14,6 +19,7 @@ non terminal	Programa, Sentencia_comp, Lista_de_sent,Sent,Sentencia_simp,
 				pr_else,Lista_switch, Opt_default,Bin_op,Variable,Rel_op;
 non terminal DobleEtiq		Condicion,Sent_for;
 non terminal String  Sent_if;
+non terminal Decl decl_exp;
 
 precedence right ASIG;
 precedence left LT,LQ,GT,GQ,EQUALS,NOTEQUALS, AND, OR, MAS, MENOS;
@@ -23,8 +29,8 @@ precedence left OPUNARIO;
 precedence nonassoc IF;
 precedence nonassoc ELSE;
 
-Programa::=			Lista_de_sent;
-Sentencia_comp::=	ALL Lista_de_sent CLL;
+Programa::=			{:TablaSimbolos.nuevoNivel();:} Lista_de_sent;
+Sentencia_comp::=	ALL {:TablaSimbolos.nuevoNivel();:}Lista_de_sent CLL{:TablaSimbolos.bajarNivel();:};
 Lista_de_sent::=	Sent
 					|Lista_de_sent Sent
 					;
@@ -32,7 +38,7 @@ Sent::=				Sentencia_simp
 					|Sentencia_comp
 					;
 Sentencia_simp::=	PYC
-|List_declar_var PYC
+					|List_declar_var PYC
 //					|Declar_tipo PYC
 					|Expresion PYC
 					|Sent_if
@@ -42,17 +48,44 @@ Sentencia_simp::=	PYC
 					|Sent_switch
 					|Sent_print PYC
 					;
-//List_declar_var::=	Tipo IDENT
-	//				|List_declar_var COMA IDENT
-	//				;
+List_declar_var::=	Tipo:t decl_exp:ex{:
+							TablaSimbolos.addSimbolo(ex.nombre,t.toString());
+							if(ex.expresion!=null)
+								Gen.gc(Gen.ASIG,ex.expresion, null,ex.nombre );
+							RESULT=t;
+						:}
+					|List_declar_var:l COMA decl_exp:ex{:
+						TablaSimbolos.addSimbolo(ex.nombre,l.toString());
+						if(ex.expresion!=null)
+							Gen.gc(Gen.ASIG,ex.expresion, null,ex.nombre );
+						RESULT=l;
+
+					:}
+					;
+decl_exp::=			IDENT:id ASIG Expresion:e{:
+						RESULT=new Decl();
+						RESULT.nombre=id;
+						RESULT.expresion=e.toString();
+					:}
+					|IDENT:id {:
+							RESULT=new Decl();
+							RESULT.nombre=id;
+						:}
+					;
+
 //Declar_tipo::=	TYPEDEF Tipo IDENT;
-//Tipo::=			INT
-//					|CHAR
+Tipo::=				INT	{:
+						RESULT=new String("int");
+						:}
+					|CHAR{:
+						RESULT=new String("char");
+						:}
 //					|IDENT
-//					;
+					;
 Sent_if::=			IF AP Condicion:c CP
 					{:
 						Gen.gc(Gen.LABEL,null,null,c.v());
+						TablaSimbolos.nuevoNivel();
 					:}
 					Sent
 					{:
@@ -64,6 +97,7 @@ Sent_if::=			IF AP Condicion:c CP
 					:}
 					pr_else{:
 						Gen.gc(Gen.LABEL,null,null,RESULT);
+						TablaSimbolos.bajarNivel();
 					:}
 					;
 
@@ -181,7 +215,10 @@ Expresion::=		Expresion:e1 MAS Expresion:e2{:
 						Gen.gc(Gen.RESTA,v.toString(),"1",v.toString());
 					:}
 					;
-Variable::=			IDENT:i {:RESULT=i;:};
+Variable::=			IDENT:i {:
+						TablaSimbolos.buscarSimbolo(i);
+						RESULT=i;
+					:};
 //Rel_op::=			LT | LQ | GQ | GT | EQUALS | NOTEQUALS
 //					;
 Condicion::=		//Expresion Rel_op Expresion {:

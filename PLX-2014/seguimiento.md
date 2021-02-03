@@ -1,12 +1,14 @@
 # Lista desglosada de tareas
 Enunciado [aquí](PLX-2014.pdf)
+Última comprobación: nota de 37.93/100
+
 1. [ ] Declaracion simple de variables
-	- [ ] Declaración
-	- [ ] Lanza error si la variable no está declarada
+	- [x] Declaración
+	- [x] Lanza error si la variable no está declarada
 2. [ ] Declaración múltiple
-	- [ ] Declaración
-	- [ ] asignación múltiple
-	- [ ] salida de error en caso de declarar varias veces la misma
+	- [x] Declaración
+	- [x] asignación múltiple
+	- [x] salida de error en caso de declarar varias veces la misma
 
 3. [ ] Inicializar mediante expresion
 

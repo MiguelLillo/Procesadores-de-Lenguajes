@@ -13,6 +13,8 @@ public class Gen{
 	public final static int PRINT=	109;
 	public final static int LABEL=	110;
 	public final static int ASIG=	111;
+	public final static int DECL=	112;
+	public final static int DECLSIMP=	113;
 	/*
 	 *	para generar el nombre de una nueva variable
 	 */
@@ -26,29 +28,29 @@ public class Gen{
 	}
 	public static void gc(int op,String arg1,String arg2,String res){
 		switch(op){
-		case SUMA:	PLC.out.println(res+"="+arg1+"+"+arg2+";");
+		case SUMA:	PLXC.out.println(res+"="+arg1+"+"+arg2+";");
 					break;
-		case RESTA:	PLC.out.println(res+"="+arg1+"-"+arg2+";");
+		case RESTA:	PLXC.out.println(res+"="+arg1+"-"+arg2+";");
 					break;
-		case MULT:	PLC.out.println(res+"="+arg1+"*"+arg2+";");
+		case MULT:	PLXC.out.println(res+"="+arg1+"*"+arg2+";");
 					break;			
-		case DIV:	PLC.out.println(res+"="+arg1+"/"+arg2+";");
+		case DIV:	PLXC.out.println(res+"="+arg1+"/"+arg2+";");
 					break;			
-		case MOD:	PLC.out.println(res+"="+arg1+"%"+arg2+";");
+		case MOD:	PLXC.out.println(res+"="+arg1+"%"+arg2+";");
 					break;			
-		case IFMENOR:PLC.out.println("if ("+arg1+"<"+arg2+") goto "+res+";");
+		case IFMENOR:PLXC.out.println("if ("+arg1+"<"+arg2+") goto "+res+";");
 					break;			
-		case IFIGUAL:PLC.out.println("if ("+arg1+"=="+arg2+") goto "+res+";");
+		case IFIGUAL:PLXC.out.println("if ("+arg1+"=="+arg2+") goto "+res+";");
 					break;			
-		case GOTO:	PLC.out.println("goto "+res+";");
+		case GOTO:	PLXC.out.println("goto "+res+";");
 					break;			
-		case PRINT:	PLC.out.println("print "+res+";");
+		case PRINT:	PLXC.out.println("print "+res+";");
 					break;			
-		case LABEL:	PLC.out.println(res+":");
+		case LABEL:	PLXC.out.println(res+":");
 					break;			
-		case ASIG:	PLC.out.println(res+"="+arg1+";");
+		case ASIG:	PLXC.out.println(res+"="+arg1+";");
 					break;
-		default:	PLC.out.println("error");
+		default:	PLXC.out.println("error");
 			
 		}
 	}

@@ -4,7 +4,9 @@ import java.io.PrintStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
-public class PLC {
+import javax.swing.text.TabableView;
+
+public class PLXC {
 
 	public static PrintStream out;
 
@@ -22,8 +24,13 @@ public class PLC {
 		parser p = new parser(new Yylex(in));
 		Object result = p.parse().value;
 		} catch (Exception e) {
-			e.printStackTrace();
+			PLXC.out.print(e.getMessage());
+			//e.printstacktrace()
 		}
+		/*if(arg[1].equals("-d")){
+
+			TablaSimbolos.mostrar();
+		}*/
 
 	}
 }
